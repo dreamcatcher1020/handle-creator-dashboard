@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    volumes:
+      # django static file location after collectstatic
+      - ./data/static:/mnt/web/static
+      - ./data/media:/mnt/web/media
+    environment:
+      - DJANGO_SETTINGS_MODULE=handlechat.settings.prod
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - SECRET_KEY=${DJANGO_SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_ORGANIZATION=${OPENAI_ORGANIZATION}
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  nginx:
+    build: ./nginx
+    restart: always
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./data/static:/mnt/web/static
+      - /etc/ssl:/etc/ssl
+
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:
+
